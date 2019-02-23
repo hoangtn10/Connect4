@@ -1,0 +1,3 @@
+Implement 3 in the middle
+Implement alpha beta pruning
+Cleaner Code
