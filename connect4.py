@@ -219,7 +219,7 @@ def minimax(depth, player, input_board):
             new_board = copy.deepcopy(input_board)
             success = drop_at(i, player, new_board)
             if success == -1:
-                point_list.append(10000)
+                point_list.append(-10000)
             elif is_won(player, new_board):
                 point_list.append(-1000)
             else:
@@ -279,10 +279,15 @@ def get_point(location, player, input_board):
         count = 0
         if new_col + 3 < col or new_col > col:
             continue
+        # if new_col + 4 < 6:
+        #     if check_three_in_middle(player, new_board, [row, new_col], [row, new_col + 1], [row, new_col + 2],
+        #                              [row, new_col + 3], [row, new_col + 4]):
+        #         point += 900
+        #         break
         if check_two_in_middle(player, new_board, [row, new_col], [row, new_col + 1], [row, new_col + 2],
                                [row, new_col + 3]):
             point += 500
-            break
+            # break
         for inc in range(0, 4):
             disc = new_board[row][new_col + inc]
             if disc != player and disc != 0:
@@ -296,10 +301,16 @@ def get_point(location, player, input_board):
         count = 0
         if row - dec < 0 or col - dec < 0 or row - dec + 3 > 6 or col - dec + 3 > 6:
             continue
+        # if row - dec + 4 < 6 and col - dec + 4 < 6:
+        #     if check_three_in_middle(player, new_board, [row - dec, col - dec], [row - dec + 1, col - dec + 1],
+        #                              [row - dec + 2, col - dec + 2], [row - dec + 3, col - dec + 3],
+        #                              [row - dec + 4, col - dec + 4]):
+        #         point += 900
+        #         break
         if check_two_in_middle(player, new_board, [row - dec, col - dec], [row - dec + 1, col - dec + 1],
                                [row - dec + 2, col - dec + 2], [row - dec + 3, col - dec + 3]):
             point += 500
-            break
+            # break
         for inc in range(0, 4):
             disc = new_board[row - dec + inc][col - dec + inc]
             if disc != player and disc != 0:
@@ -311,13 +322,19 @@ def get_point(location, player, input_board):
     # check diagonal-backward
     for dec_inc in range(3, -1, -1):
         count = 0
-        if row + dec_inc > 6 or col - dec_inc < 0 or row + dec_inc - 3 > 6 or col - dec_inc + 3 > 6:
+        if row + dec_inc > 6 or col - dec_inc < 0 or row + dec_inc - 3 < 0 or col - dec_inc + 3 > 6:
             continue
+        # if row + dec_inc - 4 < 0 and col - dec_inc + 4 < 6:
+        #     if check_three_in_middle(player, new_board, [row + dec_inc, col - dec_inc],
+        #                              [row + dec_inc - 1, col - dec_inc + 1], [row + dec_inc - 2, col - dec_inc + 2],
+        #                              [row + dec_inc - 3, col - dec_inc + 3], [row + dec_inc - 4, col - dec_inc + 4]):
+        #         point += 900
+        #         break
         if check_two_in_middle(player, new_board, [row + dec_inc, col - dec_inc],
                                [row + dec_inc - 1, col - dec_inc + 1], [row + dec_inc - 2, col - dec_inc + 2],
                                [row + dec_inc - 3, col - dec_inc + 3]):
             point += 500
-            break
+            # break
         for inc in range(0, 4):
             disc = new_board[row + dec_inc - inc][col - dec_inc + inc]
             if disc != player and disc != 0:
@@ -345,6 +362,18 @@ def check_two_in_middle(player, new_board, pos1, pos2, pos3, pos4):
                     if get_row(pos1[1], new_board) == pos1[0]:
                         if get_row(pos4[1], new_board) == pos4[0]:
                             return True
+    return False
+
+
+def check_three_in_middle(player, new_board, pos1, pos2, pos3, pos4, pos5):
+    if new_board[pos1[0]][pos1[1]] == 0:
+        if new_board[pos2[0]][pos2[1]] == player:
+            if new_board[pos3[0]][pos3[1]] == player:
+                if new_board[pos4[0]][pos4[1]] == player:
+                    if new_board[pos5[0]][pos5[1]] == 0:
+                        if get_row(pos1[1], new_board) == pos1[0]:
+                            if get_row(pos5[1], new_board) == pos5[0]:
+                                return True
     return False
 
 
@@ -401,7 +430,7 @@ def get_opponent_point(location, player, new_board):
     # check diagonal-backward
     for dec_inc in range(3, -1, -1):
         count = 0
-        if row + dec_inc > 6 or col - dec_inc < 0 or row + dec_inc - 3 > 6 or col - dec_inc + 3 > 6:
+        if row + dec_inc > 6 or col - dec_inc < 0 or row + dec_inc - 3 < 0 or col - dec_inc + 3 > 6:
             continue
         if check_two_in_middle(player, new_board, [row + dec_inc, col - dec_inc],
                                [row + dec_inc - 1, col - dec_inc + 1], [row + dec_inc - 2, col - dec_inc + 2],
