@@ -13,17 +13,18 @@ var UPRIGHT   = 5;
 var DOWNLEFT  = 6;
 var DOWNRIGHT = 7;
 
-var NUM_COL      = 7
-var NUM_ROW      = 9
-var NUM_HOVER_ROW = 1
+var NUM_COL       = 7;
+var NUM_ROW       = 7;
+var NUM_HOVER_ROW = 1;
 
-var GAP = 5
-var SPEED = 200
+var GAP   = 5;
+var SPEED = 200;
 
-var PLAYER_0_COLOR = 'rgb(255, 111, 105)'
-var PLAYER_1_COLOR = 'rgb(255, 238, 173)'
+var PLAYER_0_COLOR = 'rgb(255, 111, 105)';
+var PLAYER_1_COLOR = 'rgb(255, 238, 173)';
 
-var IN_TRANSITION = false
+var IN_TRANSITION = false;
+var CONNECT_NUM   = 4;
 
 for (var row = 0; row < NUM_ROW; row++) {
   var list = []
@@ -100,28 +101,7 @@ function cellClick(col) {
   else {
     animate(row, col, null, null)
   }
-  cellHover(col);
-}
-
-function getFree(col) {
-  for (var row = NUM_ROW - NUM_HOVER_ROW; row >= 1; row--) {
-    if (BOARD[row][col] == -1) {
-      return row;
-    }
-  }
-  return -1;
-}
-
-function getUser(cell) {
-  if (cell.style.backgroundColor == PLAYER_1_COLOR) {
-    return 1;
-  }
-  else if (cell.style.backgroundColor == PLAYER_0_COLOR) {
-    return 0;
-  }
-  else {
-    console.log("ERROR getting PLAYER from cell");
-  }
+  $(':hover').trigger('mouseover');
 }
 
 function animate(row, col, callback, callback_col) {
@@ -143,7 +123,13 @@ function animate(row, col, callback, callback_col) {
   $(cell).animate({
     left: cellX,
     top: cellY
-  }, SPEED, function() { IN_TRANSITION = false; callback != null && callback(callback_col) });
+  }, SPEED, function() { 
+    IN_TRANSITION = false; 
+    if (callback) {
+      callback(callback_col);
+    }
+    $(':hover').trigger('mouseover');
+   });
 
   $(cell).css({
     'left': cellX,
@@ -211,6 +197,40 @@ function newGame() {
 }
 
 /*******************/
+/** INTERACT API  **/
+/*******************/
+
+function getFree(col) {
+  for (var row = NUM_ROW - NUM_HOVER_ROW; row >= 1; row--) {
+    if (BOARD[row][col] == -1) {
+      return row;
+    }
+  }
+  return -1;
+}
+
+function getUser(cell) {
+  if (cell.style.backgroundColor == PLAYER_1_COLOR) {
+    return 1;
+  }
+  else if (cell.style.backgroundColor == PLAYER_0_COLOR) {
+    return 0;
+  }
+  else {
+    console.log("ERROR getting PLAYER from cell");
+  }
+}
+
+/*******************/
 /** MINIMAX AI    **/
 /*******************/
 
+function validMoves() {
+  var valid_move_list = []
+  for (var col = 0; col < NUM_COL; col++) {
+    if (getFree(col) != -1) {
+      valid_move_list.push(col);
+    }
+  }
+  return valid_move_list;
+}
