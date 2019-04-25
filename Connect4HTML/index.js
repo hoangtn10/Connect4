@@ -1,30 +1,30 @@
 var BOARD = []
 
-var PLAYER         = 0;
-var WIDTH          = 0;
-var CURR_HOVER_COL = 0;
+var PLAYER          = 0;
+var WIDTH           = 0;
+var CURR_HOVER_COL  = 0;
+var IN_TRANSITION   = false;
 
-var UP        = 0;
-var DOWN      = 1;
-var LEFT      = 2;
-var RIGHT     = 3;
-var UPLEFT    = 4;
-var UPRIGHT   = 5;
-var DOWNLEFT  = 6;
-var DOWNRIGHT = 7;
+const UP        = 0;
+const DOWN      = 1;
+const LEFT      = 2;
+const RIGHT     = 3;
+const UPLEFT    = 4;
+const UPRIGHT   = 5;
+const DOWNLEFT  = 6;
+const DOWNRIGHT = 7;
 
-var NUM_COL       = 7;
-var NUM_ROW       = 7;
-var NUM_HOVER_ROW = 1;
+const NUM_COL       = 7;
+const NUM_ROW       = 7;
+const NUM_HOVER_ROW = 1;
+const CONNECT_NUM   = 4;
 
-var GAP   = 5;
-var SPEED = 200;
+const GAP   = 7;
+const SPEED = 200;
 
-var PLAYER_0_COLOR = 'rgb(255, 111, 105)';
-var PLAYER_1_COLOR = 'rgb(255, 238, 173)';
-
-var IN_TRANSITION = false;
-var CONNECT_NUM   = 4;
+const PLAYER_0_COLOR  = 'rgb(60, 72, 89)';
+const PLAYER_1_COLOR  = 'rgb(89, 60, 72)';
+const CELL_COLOR      = 'rgb(206, 209, 214)'
 
 for (var row = 0; row < NUM_ROW; row++) {
   var list = []
@@ -49,8 +49,10 @@ function load() {
     for (var col = 0; col < NUM_COL; col++) {
       var cell = list[row * NUM_COL + col];
 
-      if (row == 0) {
-        cell.style.backgroundColor = "white";
+      
+      if (row != 0) {
+        cell.style.borderColor = CELL_COLOR;
+        cell.style.backgroundColor = CELL_COLOR;   
       }
 
       cell.onmouseover = (function(col) {
@@ -67,6 +69,7 @@ function load() {
     }
   }
 
+  cellHover(0)
   resize();
   window.addEventListener("resize", resize);
 }
@@ -81,7 +84,6 @@ function cellHover(col) {
 
   var headCell = cell.parentNode.childNodes[col+1];
   headCell.style.backgroundColor  = PLAYER === 0 ? PLAYER_0_COLOR : PLAYER_1_COLOR;
-  headCell.style.border           = "thick solid #555555";
 }
 
 function cellClick(col) {
@@ -93,15 +95,14 @@ function cellClick(col) {
   IN_TRANSITION = true
 
   BOARD[row][col] = createFreeCell(col);
+  var move = getMove();
 
-  PLAYER = PLAYER == 1 ? 0 : 1;
-  if (PLAYER == 1) {
-    animate(row, col, cellClick, 0);
+  if (PLAYER == 0) {
+    animate(row, col, null, null);
   }
   else {
     animate(row, col, null, null)
   }
-  $(':hover').trigger('mouseover');
 }
 
 function animate(row, col, callback, callback_col) {
@@ -111,24 +112,33 @@ function animate(row, col, callback, callback_col) {
     return;
   }
 
-  var cellX = (((WIDTH / NUM_COL) + (GAP / NUM_COL)) * col) + 'px';
-  var cellY = ((WIDTH / NUM_COL) * row) + 'px';
+  var cellX = (((WIDTH / NUM_COL) + (GAP / NUM_COL)) * col) + $(".controller").position().left + 'px';
+  var cellY = ((WIDTH / NUM_COL) * row) + $(".controller").position().top + 'px';
   var cell = BOARD[row][col];
 
   $(cell).css({
     'left': cellX,
-    'top': 0
+    'top': $(".controller").position().top
   });
 
   $(cell).animate({
     left: cellX,
     top: cellY
   }, SPEED, function() { 
+    // Completed animation
     IN_TRANSITION = false; 
+    
+    if(isWon(PLAYER, BOARD)) {
+      console.log('PLAYER ' + PLAYER + ' WON!')
+    }
+    
+    PLAYER = PLAYER == 1 ? 0 : 1;
+    
+    $(':hover').trigger('mouseover');
+    
     if (callback) {
       callback(callback_col);
     }
-    $(':hover').trigger('mouseover');
    });
 
   $(cell).css({
@@ -155,8 +165,8 @@ function resize() {
     for (var col = 0; col < NUM_COL; col++) {
     
       var cell = list[row * NUM_COL + col];
-      var cellX = (((WIDTH / NUM_COL) + (GAP / NUM_COL)) * col) + 'px';
-      var cellY = ((WIDTH / NUM_COL) * row) + 'px';
+      var cellX = (((WIDTH / NUM_COL) + (GAP / NUM_COL)) * col) + $(".controller").position().left + 'px';
+      var cellY = ((WIDTH / NUM_COL) * row) + $(".controller").position().top + 'px';
       $(cell).css({
         'left': cellX,
         'top': cellY
@@ -176,7 +186,6 @@ function createFreeCell(col) {
   var cell                        = document.getElementById("cell");
   var freeCell                    = cell.cloneNode(true);
   freeCell.style.backgroundColor  = PLAYER == 1 ? PLAYER_1_COLOR : PLAYER_0_COLOR;
-  freeCell.style.border           = "thick solid #555555";
   freeCell.onmouseover            = function() { cellHover(col) }
   freeCell.onclick                = function() { cellClick(col) }
   cell.parentNode.appendChild(freeCell);
@@ -210,22 +219,28 @@ function getFree(col) {
 }
 
 function getUser(cell) {
-  if (cell.style.backgroundColor == PLAYER_1_COLOR) {
-    return 1;
+  if (isNaN(cell)) {
+    if (cell.style.backgroundColor == PLAYER_1_COLOR) {
+      return 1;
+    }
+    else if (cell.style.backgroundColor == PLAYER_0_COLOR) {
+      return 0;
+    }
   }
-  else if (cell.style.backgroundColor == PLAYER_0_COLOR) {
-    return 0;
-  }
-  else {
-    console.log("ERROR getting PLAYER from cell");
-  }
+  return -1;
+}
+
+function getMove() {
+  var validMoves = getValidMoves()
+  var randomMoveIndex = Math.floor(Math.random() * validMoves.length)
+  return validMoves[randomMoveIndex];
 }
 
 /*******************/
 /** MINIMAX AI    **/
 /*******************/
 
-function validMoves() {
+function getValidMoves() {
   var valid_move_list = []
   for (var col = 0; col < NUM_COL; col++) {
     if (getFree(col) != -1) {
@@ -233,4 +248,99 @@ function validMoves() {
     }
   }
   return valid_move_list;
+}
+
+function isWon(player, board) {
+  for (var row = 0; row < NUM_ROW; row++) {
+    for (var col = 0; col < NUM_COL; col++) {
+      if (getPointDirection(player, board, row, col, DOWN, true, true) >= CONNECT_NUM ||
+          getPointDirection(player, board, row, col, RIGHT, true, true) >= CONNECT_NUM ||
+          getPointDirection(player, board, row, col, UPRIGHT, true, true) >= CONNECT_NUM ||
+          getPointDirection(player, board, row, col, DOWNRIGHT, true, true) >= CONNECT_NUM) {
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+function getIncValue(direction) {
+  var row_inc_val = 0, col_inc_val = 0;
+
+  switch (direction) {
+    case UP:
+      row_inc_val = -1;
+      break;
+    case DOWN:
+      row_inc_val = 1;
+      break;
+    case LEFT:
+      col_inc_val = -1;
+      break;
+    case RIGHT:
+      col_inc_val = 1;
+      break;
+    case UPLEFT:
+      row_inc_val = -1;
+      col_inc_val = -1;
+      break;
+    case UPRIGHT:
+      row_inc_val = -1;
+      col_inc_val = 1;
+      break;
+    case DOWNLEFT:
+      row_inc_val = 1;
+      col_inc_val = -1;
+      break;
+    case DOWNRIGHT:
+      row_inc_val = 1;
+      col_inc_val = 1;
+      break;
+  }
+
+  return [row_inc_val, col_inc_val];
+}
+
+function isInRange(row, col) {
+  return row >= 0 && row < NUM_ROW && col >= 0 && col < NUM_COL;
+}
+
+function getPointDirection(user, board, row, col, direction, isBreak, isInRangeOnly) {
+  var point = 0;
+  var row_cur_val = 0, col_cur_val = 0;
+
+  var inc_val = getIncValue(direction)
+  var row_inc_val = inc_val[0];
+  var col_inc_val = inc_val[1];
+
+  if (isInRangeOnly) {
+    var row_max_val = row + (row_inc_val * (CONNECT_NUM - 1));
+    var col_max_val = col + (col_inc_val * (CONNECT_NUM - 1)); 
+    if (!isInRange(row_max_val, col_max_val)) {
+      return 0;
+    }
+  }
+
+  for (var i = 0; i < CONNECT_NUM; i++) {
+    row_cur_val = row + (row_inc_val * i);
+    col_cur_val = col + (col_inc_val * i);
+    if (isInRange(row_cur_val, col_cur_val)) {
+      if (board[row_cur_val][col_cur_val] == -1) {
+        if (isBreak) {
+          break;
+        }
+        continue;
+      }
+      else if (getUser(board[row_cur_val][col_cur_val]) == user) {
+        point++;
+      }
+      else {
+        break;
+      }
+    }
+    else {
+      break;
+    }
+  }
+  return point;
 }
